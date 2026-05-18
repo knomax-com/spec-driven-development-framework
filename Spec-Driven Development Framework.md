@@ -71,6 +71,9 @@ specs/
     test-unit-user.md
     test-integration-user_registration.md
     test-e2e-user_registration.md
+    src/                                   ← optional: source code attached to components
+      user_service.py
+      tenant_service.py
   knowledge/
     concept-attribute.md
     concept-knowledge.md
@@ -84,6 +87,8 @@ specs/
     component-worker-knowledge_import.md
     test-unit-attribute.md
     test-e2e-knowledge_import.md
+    src/
+      knowledge_parser.py
 ```
 
 ---
@@ -480,6 +485,45 @@ component-app-knowledge_base
 component-api-user
 component-worker-knowledge_import
 ```
+
+#### Source Code Attachment
+
+A component may optionally include pre-existing source code files that implement (part of) the specified behavior. These files live in a `src/` folder inside the component's package directory.
+
+```
+specs/
+  core/
+    component-app-user.md
+    src/
+      user_service.py
+      user_validators.py
+  knowledge/
+    component-app-knowledge_base.md
+    component-worker-knowledge_import.md
+    src/
+      knowledge_parser.py
+      import_worker.py
+```
+
+The `src/` folder is per package — all components within the same package share a single `src/` directory. Source files are plain implementation files (e.g. `.py`, `.ts`, `.sql`) that are used as-is during implementation.
+
+**Referencing source files from a component spec:**
+
+A component spec references its attached source files in a `Source Files` chapter using relative paths:
+
+```markdown
+## Source Files
+
+- [src/user_service.py](src/user_service.py) — core user CRUD operations
+- [src/user_validators.py](src/user_validators.py) — input validation helpers
+```
+
+**Rules:**
+- Source files are optional. A component spec without a `Source Files` chapter has no attached code — its implementation is generated or written from the spec alone.
+- The `src/` folder lives at the package level, not next to individual spec files.
+- Source files must be referenced explicitly from the component spec that owns them. An unreferenced file in `src/` has no formal connection to any spec.
+- Multiple component specs within the same package may reference the same source file.
+- The component spec remains the source of truth for behavior. When a source file and the spec diverge, the spec wins — the source file must be updated to match.
 
 ---
 

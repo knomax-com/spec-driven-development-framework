@@ -1,27 +1,26 @@
-# Spec-Driven Development
+# Spec-Driven Development Framework
 
-Spec-Driven Development is a software development approach where the specification is the **primary artifact** and implementation is derived from it.
+Spec-Driven Development Framework is a software development approach where the specification is the **primary artifact** and implementation is derived from it.
 
 Instead of starting with code, teams start by clearly defining:
-- the problem to solve
-- expected behavior
-- constraints
-- interfaces
-- acceptance criteria
-- environment and architecture boundaries
-- quality requirements
+- the problem to solve - concept
+- entities (optional) - logical objects and their behavior
+- expected behavior between entities (optional)
+- specific desired implementation (optional)
+- testing scenarios (optional)
 
 Then humans or AI tools use that specification to generate, implement, test, and evolve the system.
 
-> **The spec is the source of truth. Code is an implementation of the spec.**
+> **The spec is the single source of truth. Code is an implementation of the spec.**
+
+The specifications are defined as a set of **Markdown files with YAML front matter**, organized into folders based on their domain packages.
+
+The file structure give users strong control over the implementation process.
+They can choose how much detail to include, and this can be done separately for each package.
 
 ---
 
-## Specification Structure
-
-Specifications are defined as a set of **Markdown files with YAML front matter**, organized into folders based on their domain packages.
-
-### File Naming Convention
+## File Naming Convention
 
 ```
 {type}-{name}
@@ -43,28 +42,140 @@ component-app-knowledge_base
 component-api-user
 ```
 
-### YAML Front Matter
+---
+
+## File Organization
+
+Files are organized into folders by **package** (bounded context). Every folder is a package — there is no special or reserved package for cross-package content. When a spec file is not clearly owned by any single package, it lives directly in the root `specs/` folder.
+
+**Cross-package placement rule:** If a spec applies to more than one package and has no clear primary owner, place it at the root `specs/` level, regardless of type. A named folder (e.g. `core/`, `knowledge/`) is just another package, not a catch-all for cross-cutting files.
+
+```
+specs/
+  glossary-active_status.md              ← cross-package: no single owner
+  glossary-mau.md                        ← cross-package: no single owner
+  core/
+    concept-soft_deletion.md             ← owned by the core package
+    concept-user.md
+    concept-tenant.md
+    entity-user.md
+    entity-tenant.md
+    flow-user_registration.md
+    flow-user_suspension.md
+    flow-tenant_onboarding.md
+    component-db-user.md
+    component-db-tenant.md
+    component-app-user.md
+    component-app-tenant.md
+    component-api-user.md
+    test-unit-user.md
+    test-integration-user_registration.md
+    test-e2e-user_registration.md
+  knowledge/
+    concept-attribute.md
+    concept-knowledge.md
+    entity-attribute.md
+    entity-knowledge_base.md
+    flow-attribute_assignment.md
+    flow-knowledge_import.md
+    component-db-attribute.md
+    component-app-knowledge_base.md
+    component-api-knowledge.md
+    component-worker-knowledge_import.md
+    test-unit-attribute.md
+    test-e2e-knowledge_import.md
+```
+
+---
+
+## YAML Front Matter
 
 Every file contains the following YAML parameters:
 
 ```yaml
 ---
-package:    string        # domain package / bounded context
-type:       string        # see Types below
+package:    string        # domain package / bounded context or empty
+type:       string        # see File Types chapter
 layer:      string        # only for component and test — see layers in each type
 name:       string        # semantic name only, words joined with underscores, e.g. "user", "user_registration"
 version:    string        # semver e.g. 1.0.0
 status:     string        # draft | review | approved | deprecated
 tags:       []string      # free-form tags for categorization
-references: []string      # paths to related spec files: {package}/{type}-{name} (see References below)
 ---
 ```
 
 ---
 
+---
 
-## Types
+### Version
 
+The `version` field tracks the evolution of a spec file using **semantic versioning** (`MAJOR.MINOR.PATCH`). It reflects changes to the specification itself, not to the implementation.
+
+New files start at `1.0.0`.
+
+| Segment | Bump when |
+|---|---|
+| `PATCH` | Typos, wording clarifications, reformatting — no semantic change |
+| `MINOR` | New content added: new attributes, new acceptance criteria, expanded behavior — backward-compatible |
+| `MAJOR` | Breaking change: renamed or removed fields, changed invariants, altered contracts that invalidate existing implementations |
+
+Spec version is independent of any implementation version. A component built against `entity-user 2.1.0` should reference that version explicitly in its own documentation if version pinning matters to the team.
+
+---
+
+### Status
+
+The `status` field describes the **review and approval state** of a spec file. It governs whether a spec is safe to implement against.
+
+| Status | Meaning |
+|---|---|
+| `draft` | Work in progress. Content is incomplete or actively changing. Do not implement. |
+| `review` | Ready for team review. Content is complete but not yet approved. |
+| `approved` | Reviewed and agreed upon. Safe to implement. |
+| `deprecated` | No longer active. Superseded by another spec or removed from scope. |
+
+**Valid transitions:**
+
+```
+draft → review → approved → deprecated
+draft → deprecated   (abandoned before approval)
+approved → draft     (major rework required)
+```
+
+A spec should only be implemented against when its status is `approved`. Referencing a `draft` or `review` spec in a `component` is permitted during active development but must be resolved before that component reaches `approved` status itself.
+
+---
+
+## File Types
+
+Each file belongs to a specific type that determines the information it contains and its relation to other files.
+See the list of all file types and their layering:
+
+| Type | Question answered | Technology-agnostic? | Cross-entity? |
+|---|---|---|---|
+| `glossary` | What does this specific term mean? | ✅ | ✅ |
+| `concept` | How does this pattern or approach work, and why? | ✅ | ✅ |
+| `entity` | What is this object and how does it behave alone? | ✅ | ❌ |
+| `flow` | What happens across entity boundaries? | ✅ | ✅ |
+| `component` | How is this implemented in a specific layer? | ❌ | — |
+| `test` | How do we verify the spec is correctly implemented? | ❌ | — |
+
+**File Types Layering**
+```
+glossary         ← term definitions, domain vocabulary
+concept          ← patterns, architectural decisions (may reference glossary)
+  └── entity     ← domain model, implementation-agnostic
+       └── flow  ← cross-entity logic, policies, usecases
+            └── component-{layer}  ← concrete implementation per layer
+            └── test-{layer}       ← verification of spec per layer
+```
+
+Each layer depends on the ones above it. A `component` implements `entity` and `flow` definitions. A `flow` references `entity` definitions. An `entity` may reference `concept` definitions for shared terminology. A `concept` or `entity` may reference `glossary` entries for precise term definitions.
+
+All the file types are defined in the following subchapters.
+
+---
 
 ### `glossary`
 
@@ -86,6 +197,7 @@ glossary-mau
 glossary-tenant
 ```
 
+---
 
 ### `concept`
 
@@ -135,6 +247,7 @@ concept-soft_deletion
 concept-eventual_consistency
 ```
 
+---
 
 ### `entity`
 
@@ -154,7 +267,6 @@ An entity must never define tables, functions, frameworks, or any implementation
 | `Lifecycle` | Explicit list of states and valid transitions, expressed as a state machine. Omit for stateless entities. |
 | `Invariants` | Rules that must always be true for this entity in isolation — constraints any implementation must enforce, regardless of caller or context. |
 | `Behavior` | Actions this entity performs on itself — the operations it owns. For code these become methods; for business logic these are the responsibilities of whoever owns this entity. |
-
 
 #### Writing Attributes
 
@@ -225,6 +337,7 @@ deleted_at:
 
 > The same attribute format is used in `component` specs for schema definitions. At the component layer, `type` uses implementation-specific types (e.g. `varchar(100)`, `timestamptz`, `jsonb`) instead of domain types.
 
+---
 
 ### `flow`
 
@@ -326,6 +439,7 @@ When the primary entity is ambiguous, apply these tie-breakers in order:
 | `flow-user_registration` | `core` | A user is being created; any side-effects on other packages are secondary |
 | `flow-knowledge_import` | `knowledge` | The knowledge base drives the flow; user/tenant effects are downstream |
 
+---
 
 ### `component`
 
@@ -339,6 +453,8 @@ component-{layer}-{name}
 ```
 
 **Layers:**
+
+The following are common layers for typical software projects. Each project defines the layers relevant to its domain — this list is not exhaustive.
 
 | Layer | Purpose |
 |---|---|
@@ -365,6 +481,7 @@ component-api-user
 component-worker-knowledge_import
 ```
 
+---
 
 ### `test`
 
@@ -399,39 +516,14 @@ test-e2e-knowledge_import
 
 ---
 
-## Type Summary
+## File References
 
-| Type | Question answered | Technology-agnostic? | Cross-entity? |
-|---|---|---|---|
-| `glossary` | What does this specific term mean? | ✅ | ✅ |
-| `concept` | How does this pattern or approach work, and why? | ✅ | ✅ |
-| `entity` | What is this object and how does it behave alone? | ✅ | ❌ |
-| `flow` | What happens across entity boundaries? | ✅ | ✅ |
-| `component` | How is this implemented in a specific layer? | ❌ | — |
-| `test` | How do we verify the spec is correctly implemented? | ❌ | — |
-
----
-
-## Layering
-
-```
-glossary         ← term definitions, domain vocabulary
-concept          ← patterns, architectural decisions (may reference glossary)
-  └── entity     ← domain model, implementation-agnostic
-       └── flow  ← cross-entity logic, policies, usecases
-            └── component-{layer}  ← concrete implementation per layer
-            └── test-{layer}       ← verification of spec per layer
-```
-
-Each layer depends on the ones above it. A `component` implements `entity` and `flow` definitions. A `flow` references `entity` definitions. An `entity` may reference `concept` definitions for shared terminology. A `concept` or `entity` may reference `glossary` entries for precise term definitions.
-
----
-
-## References
-
-Every spec file must include a `references` field in its YAML front matter — a list of paths to other spec files that are directly relevant to understanding or implementing the current spec.
+Every file can include a `references` chapter — with list of paths to other spec files that are directly relevant to understanding or implementing the current spec.
+Or reference another files directly in the text.
 
 References make the dependency graph explicit and machine-readable, allowing both humans and AI tools to navigate from a definition to its implementation and from an implementation back to its specification.
+
+---
 
 ### What to reference
 
@@ -444,134 +536,11 @@ References make the dependency graph explicit and machine-readable, allowing bot
 | `component` | `entity` and `flow` files it implements; other `component` files it depends on |
 | `test` | `flow`, `entity`, or `component` files it verifies |
 
-### Example
+---
 
-```yaml
----
-package:    core
-type:       component
-layer:      db
-name:       user
-version:    1.0.0
-status:     approved
-tags:       [db]
-references:
-  - core/entity-user
-  - core/flow-user_registration
-  - core/flow-user_suspension
-  - knowledge/component-db-attribute
----
-```
-
-```yaml
----
-package:    knowledge
-type:       test
-layer:      e2e
-name:       knowledge_import
-version:    1.0.0
-status:     approved
-tags:       [e2e]
-references:
-  - knowledge/flow-knowledge_import
-  - knowledge/component-api-knowledge
-  - knowledge/component-app-knowledge_base
-  - knowledge/component-db-attribute
----
-```
-
-### Rules
+### References Rules
 
 - References are **unidirectional** — a higher-layer spec references lower-layer specs, not the reverse. A `component` references the `flow` it implements; the `flow` does not reference back to the `component`.
-- References use the path format **`{package}/{filename-without-extension}`**, e.g. `core/entity-user`, `core/flow-user_registration`, or `knowledge/component-db-attribute`. This maps directly to a file on disk (append `.md`).
-- Every `component` and `test` file must reference at least one `entity` or `flow`.
-- A spec with no meaningful references may omit the field or leave it as an empty list.
-
----
-
-## Version
-
-The `version` field tracks the evolution of a spec file using **semantic versioning** (`MAJOR.MINOR.PATCH`). It reflects changes to the specification itself, not to the implementation.
-
-New files start at `1.0.0`.
-
-| Segment | Bump when |
-|---|---|
-| `PATCH` | Typos, wording clarifications, reformatting — no semantic change |
-| `MINOR` | New content added: new attributes, new acceptance criteria, expanded behavior — backward-compatible |
-| `MAJOR` | Breaking change: renamed or removed fields, changed invariants, altered contracts that invalidate existing implementations |
-
-Spec version is independent of any implementation version. A component built against `entity-user 2.1.0` should reference that version explicitly in its own documentation if version pinning matters to the team.
-
----
-
-## Status
-
-The `status` field describes the **review and approval state** of a spec file. It governs whether a spec is safe to implement against.
-
-| Status | Meaning |
-|---|---|
-| `draft` | Work in progress. Content is incomplete or actively changing. Do not implement. |
-| `review` | Ready for team review. Content is complete but not yet approved. |
-| `approved` | Reviewed and agreed upon. Safe to implement. |
-| `deprecated` | No longer active. Superseded by another spec or removed from scope. |
-
-**Valid transitions:**
-
-```
-draft → review → approved → deprecated
-draft → deprecated   (abandoned before approval)
-approved → draft     (major rework required)
-```
-
-A spec should only be implemented against when its status is `approved`. Referencing a `draft` or `review` spec in a `component` is permitted during active development but must be resolved before that component reaches `approved` status itself.
-
----
-
-## File Organization
-
-Files are organized into folders by **package** (bounded context). Every folder is a package — there is no special or reserved package for cross-package content. When a spec file is not clearly owned by any single package, it lives directly in the root `specs/` folder.
-
-**Cross-package placement rule:** If a spec applies to more than one package and has no clear primary owner, place it at the root `specs/` level, regardless of type. A named folder (e.g. `core/`, `knowledge/`) is just another package, not a catch-all for cross-cutting files.
-
-```
-specs/
-  glossary-active_status.md              ← cross-package: no single owner
-  glossary-mau.md                        ← cross-package: no single owner
-  core/
-    concept-soft_deletion.md             ← owned by the core package
-    concept-user.md
-    concept-tenant.md
-    entity-user.md
-    entity-tenant.md
-    flow-user_registration.md
-    flow-user_suspension.md
-    flow-tenant_onboarding.md
-    component-db-user.md
-    component-db-tenant.md
-    component-app-user.md
-    component-app-tenant.md
-    component-api-user.md
-    test-unit-user.md
-    test-integration-user_registration.md
-    test-e2e-user_registration.md
-  knowledge/
-    concept-attribute.md
-    concept-knowledge.md
-    entity-attribute.md
-    entity-knowledge_base.md
-    flow-attribute_assignment.md
-    flow-knowledge_import.md
-    component-db-attribute.md
-    component-app-knowledge_base.md
-    component-api-knowledge.md
-    component-worker-knowledge_import.md
-    test-unit-attribute.md
-    test-e2e-knowledge_import.md
-```
-
-
-
-
-
+- References use the standard markdown links format `[{package}/{filename-without-extension}]({package}/{filename-without-extension}.md)`, e.g. `[core/entity-user](core/entity-user.md)`. This maps directly to a file on disk.
+- A spec with no meaningful references may omit the chapter or leave it as an empty list.
 

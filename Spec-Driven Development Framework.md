@@ -50,12 +50,15 @@ Files are organized into folders by **package** (bounded context). Every folder 
 
 **Cross-package placement rule:** If a spec applies to more than one package and has no clear primary owner, place it at the root `specs/` level, regardless of type. A named folder (e.g. `core/`, `knowledge/`) is just another package, not a catch-all for cross-cutting files.
 
+**Package entry point:** In every package, start by reading `concept-{package}` (the concept named after that package). It is the overview of the package’s purpose and approach; other specs in the package should be read after it.
+
 ```
 specs/
   glossary-active_status.md              ← cross-package: no single owner
   glossary-mau.md                        ← cross-package: no single owner
   core/
-    concept-soft_deletion.md             ← owned by the core package
+    concept-core.md                      ← package entry point: read first
+    concept-soft_deletion.md
     concept-user.md
     concept-tenant.md
     entity-user.md
@@ -75,8 +78,8 @@ specs/
       user_service.py
       tenant_service.py
   knowledge/
+    concept-knowledge.md                 ← package entry point: read first
     concept-attribute.md
-    concept-knowledge.md
     entity-attribute.md
     entity-knowledge_base.md
     flow-attribute_assignment.md
@@ -213,6 +216,7 @@ Describes a behavioral pattern, architectural approach, or system-wide policy ap
 A concept is completely technology-agnostic — it must never reference specific databases, storage engines, programming languages, frameworks, or any other implementation technology. How a pattern is realized in a specific stack belongs in a `component` spec.
 
 **Use for:**
+- Package overviews — each package has a `concept-{package}` file (named after the package) that is the first file to read in that package
 - Patterns applied consistently across entities (e.g. soft deletion, ownership, tenancy)
 - Architectural approaches and their rationale
 - System-wide policies with behavioral implications
@@ -246,6 +250,8 @@ Each pattern section follows this structure:
 
 **Example files:**
 ```
+concept-core                     ← package overview for core
+concept-knowledge                ← package overview for knowledge
 concept-user
 concept-tenant
 concept-soft_deletion

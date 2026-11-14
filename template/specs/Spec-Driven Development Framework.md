@@ -32,67 +32,29 @@ They can choose how much detail to include, and this can be done separately for 
 - `_` (underscore) joins words within a single part
 - `name` must never contain a hyphen — use underscores for multi-word names
 
-**Examples:**
-```
-concept-soft_deletion
-entity-user
-flow-user_registration
-component-db-user
-component-app-knowledge_base
-component-api-user
-```
-
 ---
 
 ## File Organization
 
 Files are organized into folders by **package** (bounded context). Every folder is a package — there is no special or reserved package for cross-package content. When a spec file is not clearly owned by any single package, it lives directly in the root `specs/` folder.
 
-**Cross-package placement rule:** If a spec applies to more than one package and has no clear primary owner, place it at the root `specs/` level, regardless of type. A named folder (e.g. `core/`, `knowledge/`) is just another package, not a catch-all for cross-cutting files.
+**Cross-package placement rule:** If a spec applies to more than one package and has no clear primary owner, place it at the root `specs/` level, regardless of type. A named folder is just another package, not a catch-all for cross-cutting files.
 
 **Package entry point:** In every package, start by reading `concept-{package}` (the concept named after that package). It is the overview of the package’s purpose and approach; other specs in the package should be read after it.
 
 ```
 specs/
-  glossary-active_status.md              ← cross-package: no single owner
-  glossary-mau.md                        ← cross-package: no single owner
-  core/
-    concept-core.md                      ← package entry point: read first
-    concept-soft_deletion.md
-    concept-user.md
-    concept-tenant.md
-    entity-user.md
-    entity-tenant.md
-    flow-user_registration.md
-    flow-user_suspension.md
-    flow-tenant_onboarding.md
-    component-db-user.md
-    component-db-tenant.md
-    component-app-user.md
-    component-app-tenant.md
-    component-api-user.md
-    test-unit-user.md
-    test-integration-user_registration.md
-    test-e2e-user_registration.md
-    src/                                   ← optional: source code attached to components
-      user_service.py
-      tenant_service.py
-  knowledge/
-    concept-knowledge.md                 ← package entry point: read first
-    concept-attribute.md
-    entity-attribute.md
-    entity-knowledge_base.md
-    flow-attribute_assignment.md
-    flow-knowledge_import.md
-    component-db-attribute.md
-    component-app-knowledge_base.md
-    component-api-knowledge.md
-    component-worker-knowledge_import.md
-    test-unit-attribute.md
-    test-e2e-knowledge_import.md
-    src/
-      knowledge_parser.py
+  glossary-{term}.md                     ← cross-package: no single owner
+  {package}/
+    concept-{package}.md                 ← package entry point: read first
+    concept-{name}.md
+    entity-{name}.md
+    flow-{name}.md
+    component-{layer}-{name}.md
+    test-{layer}-{name}.md
 ```
+
+`specs/` holds definition Markdown only (`*.md`). Never put source, DDL, scripts, tests, or other code under `specs/`. Implementation lives under `app/…` and, when virtualization is used, `infra/<service>/<stack>/`.
 
 ---
 
@@ -105,7 +67,7 @@ Every file contains the following YAML parameters:
 package:    string        # domain package / bounded context or empty
 type:       string        # see File Types chapter
 layer:      string        # only for component and test — see layers in each type
-name:       string        # semantic name only, words joined with underscores, e.g. "user", "user_registration"
+name:       string        # semantic name only, words joined with underscores
 version:    string        # semver e.g. 1.0.0
 status:     string        # draft | review | approved | deprecated
 tags:       []string      # free-form tags for categorization
@@ -128,7 +90,7 @@ New files start at `1.0.0`.
 | `MINOR` | New content added: new attributes, new acceptance criteria, expanded behavior — backward-compatible |
 | `MAJOR` | Breaking change: renamed or removed fields, changed invariants, altered contracts that invalidate existing implementations |
 
-Spec version is independent of any implementation version. A component built against `entity-user 2.1.0` should reference that version explicitly in its own documentation if version pinning matters to the team.
+Spec version is independent of any implementation version. A component built against `entity-{name}` at a specific version should reference that version explicitly in its own documentation if version pinning matters to the team.
 
 ---
 
@@ -191,19 +153,12 @@ All the file types are defined in the following subchapters.
 
 Provides precise, unambiguous definitions for individual terms, abbreviations, or business vocabulary used across one or more packages. A glossary entry contains only meaning — no behavior, no pattern, no architectural rationale, no technology references. It is the most foundational spec type: everything else may reference it, but it references nothing.
 
-**Distinction from `concept`:** A `concept` describes a pattern or approach that has rules, rationale, and behavioral implications (e.g. soft deletion as a pattern). A `glossary` entry defines what a word or phrase means in this domain — nothing more.
+**Distinction from `concept`:** A `concept` describes a pattern or approach that has rules, rationale, and behavioral implications. A `glossary` entry defines what a word or phrase means in this domain — nothing more.
 
 **Use for:**
 - Business jargon or abbreviations that need a canonical definition
 - Terms that appear in multiple packages with the same precise meaning
 - Domain vocabulary that cannot be inferred from common usage
-
-**Example files:**
-```
-glossary-active_status
-glossary-mau
-glossary-tenant
-```
 
 ---
 
@@ -217,7 +172,7 @@ A concept is completely technology-agnostic — it must never reference specific
 
 **Use for:**
 - Package overviews — each package has a `concept-{package}` file (named after the package) that is the first file to read in that package
-- Patterns applied consistently across entities (e.g. soft deletion, ownership, tenancy)
+- Patterns applied consistently across entities
 - Architectural approaches and their rationale
 - System-wide policies with behavioral implications
 
@@ -251,16 +206,6 @@ Each pattern section follows this structure:
 - **Process in order.** When a concept describes a procedure, introduce vocabulary first, then numbered steps (Step 1, Step 2, …). Do not jump into mid-process language before the terms exist.
 - Keep precision. Simple wording must still state the real rules, formulas, and edge cases.
 
-**Example files:**
-```
-concept-core                     ← package overview for core
-concept-knowledge                ← package overview for knowledge
-concept-user
-concept-tenant
-concept-soft_deletion
-concept-eventual_consistency
-```
-
 ---
 
 ### `entity`
@@ -287,29 +232,11 @@ An entity must never define tables, functions, frameworks, or any implementation
 Attributes are defined using a YAML map. Each key is the attribute name; nested properties describe it.
 
 ```yaml
-workspace_id:
-  type:        UUID
-  source:      system-resolved
-  constraints: [required, immutable, references workspace.id]
-  description: The workspace this user belongs to
-
-display_name:
-  type:        string
-  source:      user-provided
-  constraints: [required, max: 100]
-  description: The name shown in the UI
-
-status:
-  type:        enum(active, suspended, deleted)
-  source:      system-generated
-  constraints: [required, default: active]
-  description: Current lifecycle state of the user
-
-deleted_at:
-  type:        timestamp
-  source:      system-generated
-  constraints: [optional, immutable-once-set]
-  description: Set when the user is soft-deleted; null while active
+{attribute_name}:
+  type:        {domain_type}
+  source:      {source_value}
+  constraints: [{constraint}, ...]
+  description: {what this attribute represents}
 ```
 
 **`source` values:**
@@ -318,7 +245,7 @@ deleted_at:
 |---|---|
 | `user-provided` | Supplied directly by the actor initiating the action |
 | `system-generated` | Created automatically by the system (e.g. UUID, timestamp) |
-| `system-resolved` | Derived by the system from context (e.g. session, tenant, or parent) |
+| `system-resolved` | Derived by the system from context (e.g. session or parent) |
 | `derived` | Computed from other attributes of the same entity |
 
 **Standard constraint vocabulary:**
@@ -407,32 +334,6 @@ AC-1: <short title>
 - Cover the primary success path first, then edge cases within the happy path.
 - Failure paths belong in `Error Cases`, not here.
 
-**Example:**
-
-```
-AC-1: Successful registration creates an active user
-  Given no account exists for the provided email
-  When  a user submits a valid registration form
-  Then  a new user record is created with status "active"
-  And   a verification email is sent to the provided address
-
-AC-2: Duplicate email is rejected
-  Given an account already exists for the provided email
-  When  a user submits a registration form with that email
-  Then  no new user record is created
-  And   the flow terminates with an "email already in use" error
-```
-
-**Example files:**
-```
-flow-user_registration
-flow-user_suspension
-flow-tenant_onboarding
-flow-attribute_assignment
-flow-knowledge_import
-```
-
-
 #### Cross-Package Flows
 
 Flows frequently span more than one package. The `package` field always contains a single string — the folder the file physically lives in. Cross-package dependencies are expressed through `references`, not through a multi-valued `package` field.
@@ -442,16 +343,8 @@ Flows frequently span more than one package. The `package` field always contains
 When the primary entity is ambiguous, apply these tie-breakers in order:
 
 1. The entity that is *written to* — whose attribute or lifecycle state is mutated
-2. The entity that is the *target* of the action (e.g. recipient of a transfer, not the initiator)
+2. The entity that is the *target* of the action, not the initiator
 3. The more "downstream" or "owned" entity in the domain model
-
-**Examples:**
-
-| Flow | Package | Reasoning |
-|---|---|---|
-| `flow-attribute_assignment` | `knowledge` | The attribute entity is what is being mutated |
-| `flow-user_registration` | `core` | A user is being created; any side-effects on other packages are secondary |
-| `flow-knowledge_import` | `knowledge` | The knowledge base drives the flow; user/tenant effects are downstream |
 
 ---
 
@@ -459,7 +352,7 @@ When the primary entity is ambiguous, apply these tie-breakers in order:
 
 **Question it answers:** *How is this implemented in a specific layer?*
 
-Describes the concrete implementation of entities and flows within a specific technical layer. This is where tables, functions, endpoints, and services are defined with enough detail to generate or implement actual code.
+A technology-specific **definition** of how entities and flows are realized in a given technical layer. It describes schemas, interfaces, signatures, and behavior in enough detail to generate or implement code elsewhere — it is not a place to store code. Tables, functions, endpoints, and services are specified here as definitions only; actual implementation files live under `app/…` and, when virtualization is used, `infra/<service>/<stack>/`.
 
 **Naming convention:**
 ```
@@ -484,55 +377,7 @@ The following are common layers for typical software projects. Each project defi
 - Functions with signature, logic, and error cases
 - Dependencies on other components
 - References to entities and flows being implemented
-
-**Example files:**
-```
-component-db-user
-component-db-tenant
-component-app-user
-component-app-knowledge_base
-component-api-user
-component-worker-knowledge_import
-```
-
-#### Source Code Attachment
-
-A component may optionally include pre-existing source code files that implement (part of) the specified behavior. These files live in a `src/` folder inside the component's package directory.
-
-```
-specs/
-  core/
-    component-app-user.md
-    src/
-      user_service.py
-      user_validators.py
-  knowledge/
-    component-app-knowledge_base.md
-    component-worker-knowledge_import.md
-    src/
-      knowledge_parser.py
-      import_worker.py
-```
-
-The `src/` folder is per package — all components within the same package share a single `src/` directory. Source files are plain implementation files (e.g. `.py`, `.ts`, `.sql`) that are used as-is during implementation.
-
-**Referencing source files from a component spec:**
-
-A component spec references its attached source files in a `Source Files` chapter using relative paths:
-
-```markdown
-## Source Files
-
-- [src/user_service.py](src/user_service.py) — core user CRUD operations
-- [src/user_validators.py](src/user_validators.py) — input validation helpers
-```
-
-**Rules:**
-- Source files are optional. A component spec without a `Source Files` chapter has no attached code — its implementation is generated or written from the spec alone.
-- The `src/` folder lives at the package level, not next to individual spec files.
-- Source files must be referenced explicitly from the component spec that owns them. An unreferenced file in `src/` has no formal connection to any spec.
-- Multiple component specs within the same package may reference the same source file.
-- The component spec remains the source of truth for behavior. When a source file and the spec diverge, the spec wins — the source file must be updated to match.
+- Optional links to implementation paths under `app/…` or `infra/<service>/<stack>/` (never under `specs/`)
 
 ---
 
@@ -554,13 +399,6 @@ test-{layer}-{name}
 | `unit` | Isolated tests for a single entity invariant or component function |
 | `integration` | Tests spanning multiple components within a layer (e.g. DB functions together) |
 | `e2e` | End-to-end tests covering a full flow across all layers |
-
-**Example files:**
-```
-test-unit-user
-test-integration-user_registration
-test-e2e-knowledge_import
-```
 
 **Contains:**
 - Reference to the flow or entity being tested
@@ -594,6 +432,5 @@ References make the dependency graph explicit and machine-readable, allowing bot
 ### References Rules
 
 - References are **unidirectional** — a higher-layer spec references lower-layer specs, not the reverse. A `component` references the `flow` it implements; the `flow` does not reference back to the `component`.
-- References use the standard markdown links format `[{package}/{filename-without-extension}]({package}/{filename-without-extension}.md)`, e.g. `[core/entity-user](core/entity-user.md)`. This maps directly to a file on disk.
+- References use the standard markdown links format `[{package}/{type}-{name}]({package}/{type}-{name}.md)`. This maps directly to a file on disk.
 - A spec with no meaningful references may omit the chapter or leave it as an empty list.
-

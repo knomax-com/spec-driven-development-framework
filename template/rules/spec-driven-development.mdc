@@ -6,15 +6,44 @@ alwaysApply: true
 # Spec-Driven Development
 
 Full reference: `specs/Spec-Driven Development Framework.md`
-The initial file is (where to start reading): `specs/trading/concept-trading.md`
+The initial file is (where to start reading): `specs/concept-{application/repository name}.md`
 
 **The spec is the single source of truth. Code is an implementation of the spec.**
 
 When behavior, schema, or interfaces change, update the relevant spec first (or in the same change), then update code.
 
+## Repository structure
+
+Root is the application/repository name.
+
+```text
+<repo>/
+  app/
+    <module>/
+      <package>/
+        <stack>/
+  docs/
+  specs/
+  infra/                 ← preferred when using virtualization
+    <service>/
+      <stack>/
+```
+
+- `<repo>` — application/repository root
+- `app/` — application code
+- `<module>` — domain unit
+- `<package>` — capability within a module
+- `<stack>` — technology used to implement a package (under `app/`) or package a service (under `infra/`)
+- `docs/` — general development documentation
+- `specs/` — SDD definition files only (`*.md`); never code or `src/`
+- `<service>` — runnable service under virtualization
+- `infra/<service>/<stack>/` — preferred packaging for one service under a given virtualization/packaging stack (containers, VMs, or equivalent). Omit when the service does not use virtualization.
+
+Prefer virtualization for runnable services. Orchestration configs (Compose, manifests, and similar), env examples, and README stay at the repo root when used.
+
 ## Before implementing
 
-1. Locate specs under `specs/{package}/`. Follow dependency order:
+1. Locate specs under `specs/`. Domain concept/entity/flow live at `specs/` root. Stack implementations live in packages under `specs/{stack}/`. Follow dependency order:
    `glossary → concept → entity → flow → component → test`.
 2. Read the target spec and everything in its **References** chapter.
 3. Check `status` in YAML front matter:
@@ -28,7 +57,9 @@ When behavior, schema, or interfaces change, update the relevant spec first (or 
 - Match the spec's schemas, functions, acceptance criteria, and error cases.
 - Keep technology out of `concept`, `entity`, and `flow` specs; put stack-specific detail in `component` specs only.
 - If spec and code diverge, **the spec wins** — update code to match, or bump the spec version and status first.
-- When a component spec references `src/` files, treat those paths as part of the spec.
+- Specs are definition files only (`*.md`). Never put source, DDL, scripts, tests, or other code under `specs/`.
+- `concept` / `entity` / `flow` stay technology-agnostic. Stack-specific detail belongs only in `component` specs—and those still describe the technology in general terms (schema, interfaces, signatures, behavior), not embedded or attached code.
+- Put implementation under `app/<module>/<package>/<stack>/` and, when virtualization is used, service packaging under `infra/<service>/<stack>/`. Component specs may link to those paths; the files themselves must not live under `specs/`.
 
 ## After implementing
 
@@ -45,8 +76,6 @@ Explain so a new reader can follow without prior jargon. Same bar as explaining 
 3. **Process in steps.** When describing how something works, number the stages (Step 1, Step 2, …). Do not jump into mid-process language.
 4. **Plain language first.** Prefer short sentences. Define a term in one sentence, then use it. Avoid stacking undefined words in one clause.
 5. **Precision stays.** Simple wording must still match the real rules, formulas, and edge cases. Clarity is not a reason to omit behavior.
-
-Reference example of this approach: `specs/zigzag_analysis/concept-zigzag_analysis.md`.
 
 ## Response style
 

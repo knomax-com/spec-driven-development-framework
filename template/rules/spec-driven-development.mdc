@@ -43,7 +43,7 @@ Prefer virtualization for runnable services. Orchestration configs (Compose, man
 
 ## Before implementing
 
-1. Locate specs under `specs/`. Cross-package specs with no clear owner live at `specs/` root. Package-owned specs live under `specs/{package}/`. Follow dependency order:
+1. Locate specs under `specs/`. Cross-package specs with no clear owner live at `specs/` root. Package-owned specs live under `specs/{package}/` and may use optional group subfolders for organization; ownership stays `{package}`, not the group. Follow dependency order:
    `glossary → concept → entity → flow → component → test`.
 2. Read the target spec and everything in its **References** chapter.
 3. Check `status` in YAML front matter:

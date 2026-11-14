@@ -44,7 +44,7 @@ Full reference (naming, front matter, file types): [`template/specs/Spec-Driven 
      - Cursor: `.cursor/rules/spec-driven-development.mdc`
      - Other tools: often `rules/`, `.github/`, or an equivalent project rules folder — use whatever that tool documents.
 4. **Add an entry-point concept** for the application/repository, e.g. `specs/concept-{application-or-repo-name}.md`. You can ask the AI to create it from your rough ideas — you do not need to write it by hand. Start reading from there.
-5. **Grow by package** under `specs/{package}/` as needed. Add only the file types you need (`entity`, `flow`, `component`, `test`, …). Cross-package specs with no clear owner stay at the `specs/` root.
+5. **Grow by package** under `specs/{package}/` as needed (packages are top-level under `specs/`). Optionally nest **group** folders inside a package to organize related specs; groups are sorting only, not new packages. Add only the file types you need (`entity`, `flow`, `component`, `test`, …). Cross-package specs with no clear owner stay at the `specs/` root.
 6. **Implement against approved specs.** When behavior, schema, or interfaces change, update the relevant spec first (or in the same change), then update the code.
 
 Optional: copy other folders from [`template/`](template/) (`app/`, `docs/`, `infra/`, …) if you want the recommended repository layout described in the rules file and framework doc.

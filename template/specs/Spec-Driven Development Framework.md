@@ -36,11 +36,15 @@ They can choose how much detail to include, and this can be done separately for 
 
 ## File Organization
 
-Files are organized into folders by **package** (bounded context). Every folder is a package — there is no special or reserved package for cross-package content. When a spec file is not clearly owned by any single package, it lives directly in the root `specs/` folder.
+Files are organized into folders by **package** (bounded context). A **package** is a direct child folder of `specs/`. Folders *inside* a package are **groups** — sorting only; they do not get their own package identity or `concept-*` entry point. When a spec file is not clearly owned by any single package, it lives directly in the root `specs/` folder.
 
-**Cross-package placement rule:** If a spec applies to more than one package and has no clear primary owner, place it at the root `specs/` level, regardless of type. A named folder is just another package, not a catch-all for cross-cutting files.
+**Cross-package placement rule:** If a spec applies to more than one package and has no clear primary owner, place it at the root `specs/` level, regardless of type. A named folder directly under `specs/` is a package, not a catch-all for cross-cutting files.
 
-**Package entry point:** In every package, start by reading `concept-{package}` (the concept named after that package). It is the overview of the package’s purpose and approach; other specs in the package should be read after it.
+**Package entry point:** In every package, start by reading `concept-{package}` at the **package root** (the concept named after that package). It is the overview of the package’s purpose and approach; other specs in the package — including those in groups — should be read after it.
+
+**Groups:** Optional nested folders under a package organize related specs (e.g. by capability area). Groups may nest. They are not packages: the owning package is always the first path segment under `specs/`.
+
+**Promotion:** When a group becomes its own capability, move it to `specs/{new-package}/` with its own `concept-{new-package}.md`.
 
 ```
 specs/
@@ -52,6 +56,11 @@ specs/
     flow-{name}.md
     component-{layer}-{name}.md
     test-{layer}-{name}.md
+    {group}/                             ← sorting only; nestable
+      entity-{name}.md
+      flow-{name}.md
+      component-{layer}-{name}.md
+      test-{layer}-{name}.md
 ```
 
 `specs/` holds definition Markdown only (`*.md`). Never put source, DDL, scripts, tests, or other code under `specs/`. Implementation lives under `app/…` and, when virtualization is used, `infra/<service>/<stack>/`.
@@ -64,7 +73,7 @@ Every file contains the following YAML parameters:
 
 ```yaml
 ---
-package:    string        # domain package / bounded context or empty
+package:    string        # package root name (first path segment under specs/) or empty; never a group path
 type:       string        # see File Types chapter
 layer:      string        # only for component and test — see layers in each type
 name:       string        # semantic name only, words joined with underscores
@@ -336,7 +345,7 @@ AC-1: <short title>
 
 #### Cross-Package Flows
 
-Flows frequently span more than one package. The `package` field always contains a single string — the folder the file physically lives in. Cross-package dependencies are expressed through `references`, not through a multi-valued `package` field.
+Flows frequently span more than one package. The `package` field always contains a single string — the **owning package** (package root name), even when the file sits in a group subfolder. Cross-package dependencies are expressed through `references`, not through a multi-valued `package` field.
 
 **Primary-package rule:** Place the flow under the package of the entity whose state is most fundamentally changed by the flow.
 
@@ -432,5 +441,5 @@ References make the dependency graph explicit and machine-readable, allowing bot
 ### References Rules
 
 - References are **unidirectional** — a higher-layer spec references lower-layer specs, not the reverse. A `component` references the `flow` it implements; the `flow` does not reference back to the `component`.
-- References use the standard markdown links format `[{package}/{type}-{name}]({package}/{type}-{name}.md)`. This maps directly to a file on disk.
+- References use the standard markdown links format and the **full path under `specs/`**, including groups when present. Package-root files: `[{package}/{type}-{name}]({package}/{type}-{name}.md)`. Files in a group: `[{package}/{group}/{type}-{name}]({package}/{group}/{type}-{name}.md)`. This maps directly to a file on disk.
 - A spec with no meaningful references may omit the chapter or leave it as an empty list.

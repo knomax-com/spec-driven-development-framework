@@ -1,0 +1,57 @@
+---
+description: Spec-Driven Development — spec is source of truth; read specs before implementing
+alwaysApply: true
+---
+
+# Spec-Driven Development
+
+Full reference: `specs/Spec-Driven Development Framework.md`
+The initial file is (where to start reading): `specs/trading/concept-trading.md`
+
+**The spec is the single source of truth. Code is an implementation of the spec.**
+
+When behavior, schema, or interfaces change, update the relevant spec first (or in the same change), then update code.
+
+## Before implementing
+
+1. Locate specs under `specs/{package}/`. Follow dependency order:
+   `glossary → concept → entity → flow → component → test`.
+2. Read the target spec and everything in its **References** chapter.
+3. Check `status` in YAML front matter:
+   - `approved` — safe to implement against
+   - `draft` or `review` — not final; note gaps and ask before relying on it
+   - `deprecated` — do not implement; find the replacement
+4. For `component` specs, also read the `entity` and `flow` specs they implement.
+
+## While implementing
+
+- Match the spec's schemas, functions, acceptance criteria, and error cases.
+- Keep technology out of `concept`, `entity`, and `flow` specs; put stack-specific detail in `component` specs only.
+- If spec and code diverge, **the spec wins** — update code to match, or bump the spec version and status first.
+- When a component spec references `src/` files, treat those paths as part of the spec.
+
+## After implementing
+
+- Bump spec `version` when the specification itself changes (semver rules in the framework doc).
+- Move spec `status` through `draft → review → approved` as appropriate.
+- Add or update `test-{layer}-*` specs when verifying flows or invariants — only if tests are necessary or used.
+
+## When writing specs
+
+Explain so a new reader can follow without prior jargon. Same bar as explaining to a five-year-old: simple words, no leaps.
+
+1. **Define before use.** Never use a domain term until it is defined earlier in the same document (or linked glossary). If a pattern needs “leg”, define “leg” in a prior pattern first.
+2. **Build vocabulary in order.** Introduce input → result words → process words → knobs → rules → step-by-step process.
+3. **Process in steps.** When describing how something works, number the stages (Step 1, Step 2, …). Do not jump into mid-process language.
+4. **Plain language first.** Prefer short sentences. Define a term in one sentence, then use it. Avoid stacking undefined words in one clause.
+5. **Precision stays.** Simple wording must still match the real rules, formulas, and edge cases. Clarity is not a reason to omit behavior.
+
+Reference example of this approach: `specs/zigzag_analysis/concept-zigzag_analysis.md`.
+
+## Response style
+
+- Write for a quick scan: simple words, short sentences, short answers.
+- Structure like documentation: headings when useful, bullets by default, clear sections.
+- Be direct and factual. Put the most important information first.
+- Avoid filler, introductions, conclusions, marketing language, and long explanations.
+- Use examples only when needed. Do not repeat the same point. Prefer 5 words over 15.

@@ -246,7 +246,10 @@ Each pattern section follows this structure:
 - The pattern name must be descriptive and self-explanatory in isolation.
 - The body states what the rule enforces — no implementation details, no technology references.
 - `**Why:**` is required in every pattern section. A rule without a rationale is incomplete.
-- Each pattern must be independently understandable; avoid cross-references between patterns.
+- **Define before use.** Never use a domain term until it is defined earlier in the same document (or a linked glossary). Patterns may build on earlier patterns in the same file; they must not introduce undefined jargon.
+- **Explain simply.** Write so a new reader can follow without prior jargon — short sentences, one idea at a time. Prefer defining a term in one sentence, then using it.
+- **Process in order.** When a concept describes a procedure, introduce vocabulary first, then numbered steps (Step 1, Step 2, …). Do not jump into mid-process language before the terms exist.
+- Keep precision. Simple wording must still state the real rules, formulas, and edge cases.
 
 **Example files:**
 ```

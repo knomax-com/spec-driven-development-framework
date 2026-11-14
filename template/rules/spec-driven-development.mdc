@@ -24,6 +24,8 @@ Root is the application/repository name.
         <stack>/
   docs/
   specs/
+    <package>/
+      <group>/             ← optional; sorting only
   infra/                 ← preferred when using virtualization
     <service>/
       <stack>/
@@ -36,6 +38,7 @@ Root is the application/repository name.
 - `<stack>` — technology used to implement a package (under `app/`) or package a service (under `infra/`)
 - `docs/` — general development documentation
 - `specs/` — SDD definition files only (`*.md`); never code or `src/`
+- `<group>` — optional folder under a package for organizing specs; not a package
 - `<service>` — runnable service under virtualization
 - `infra/<service>/<stack>/` — preferred packaging for one service under a given virtualization/packaging stack (containers, VMs, or equivalent). Omit when the service does not use virtualization.
 

@@ -71,4 +71,4 @@ This software is available under the [PolyForm Noncommercial License 1.0.0](LICE
 
 Non-commercial use is permitted under those terms.
 
-Commercial use requires a separate license. For commercial licensing inquiries, contact: paulservice79@gmail.com
+Commercial use requires a separate license. For commercial licensing inquiries, contact: license@knomax.com
